@@ -4,6 +4,7 @@
 --]]
 
 local Utils = require("echo.utils")
+local Chat = require("echo.chat")
 
 -- Tables `{}` are the only built-in data structure
 local Echo = {}
@@ -18,12 +19,20 @@ local Echo = {}
 Echo.setup = function(opts)
     Utils.is_command_installed("ollama")
     Utils.is_command_installed("curl")
-
     Utils.is_model_available(opts.model)
+
+    Chat.init_chat_window_opts(opts)
+
+    vim.keymap.set("n", "<leader>c", "<cmd>EchoChat<CR>")
 end
 
 Echo.setup({
     model = "llama3.1:latest",
+    window = {
+        position = "right", -- the position of the window
+        width = 30, -- % of current window width
+        title = "ECHO",
+    },
 })
 
 return Echo
