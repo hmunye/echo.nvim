@@ -1,6 +1,6 @@
 <div align="center">
   
-<img src="https://github.com/user-attachments/assets/224eac11-449e-4779-abf4-d3473892739e" width="450px" alt="ECHO logo"/>
+<img src="https://github.com/user-attachments/assets/224eac11-449e-4779-abf4-d3473892739e" width="400px" alt="ECHO logo"/>
 
 #### AI in your terminal, powered locally
 
