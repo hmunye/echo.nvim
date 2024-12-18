@@ -15,12 +15,15 @@ local Echo = {}
     Every function returns nil by default if no explicit return value
     is provided. `setup` is a key of the `Echo` table
 --]]
-Echo.setup = function(_opts)
+Echo.setup = function(opts)
     Utils.is_command_installed("ollama")
+    Utils.is_command_installed("curl")
+
+    Utils.is_model_available(opts.model)
 end
 
 Echo.setup({
-    model = "llama3.1",
+    model = "llama3.1:latest",
 })
 
 return Echo
