@@ -3,22 +3,24 @@
     Neovim but are available to the user to `require`
 --]]
 
+local Utils = require("echo.utils")
+
 -- Tables `{}` are the only built-in data structure
-local M = {}
+local Echo = {}
 
 -- `_` refers to private module member. Not enforced
--- M._example = {}
+-- Echo._example = {}
 
 --[[
     Every function returns nil by default if no explicit return value
-    is provided. `setup` is a key of the `M` table
+    is provided. `setup` is a key of the `Echo` table
 --]]
-M.setup = function(opts)
-    print(vim.inspect(opts.model))
+Echo.setup = function(_opts)
+    Utils.is_command_installed("ollama")
 end
 
-M.setup({
+Echo.setup({
     model = "llama3.1",
 })
 
-return M
+return Echo
