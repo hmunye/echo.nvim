@@ -14,11 +14,11 @@ local M = {}
     is provided. `setup` is a key of the `M` table
 --]]
 M.setup = function(opts)
-	print(vim.inspect(opts.model))
+    print(vim.inspect(opts.model))
 end
 
 M.setup({
-	model = "llama3.1",
+    model = "llama3.1",
 })
 
 return M
