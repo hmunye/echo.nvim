@@ -1,7 +1,6 @@
-local Curl = require("plenary.curl")
-
 local Utils = require("echo.utils")
 local Prompt = require("echo.prompt_input")
+local LLM = require("echo.llm")
 
 local M = {}
 
@@ -34,27 +33,6 @@ local state = {
     },
 }
 
-function M.init_chat_window_opts(opts)
-    state.opts = opts or {}
-
-    -- Set default values for chat opts
-    state.opts.model = state.opts.model or ""
-    state.opts.model_options = state.opts.model_options or {}
-    state.opts.window = state.opts.window or {}
-    state.opts.prompt = state.opts.prompt or {}
-    state.opts.key_mappings = state.opts.key_mappings or {}
-
-    -- Set toggle chat key mapping on initialization
-    if opts.key_mappings.toggle_chat then
-        vim.keymap.set(
-            opts.key_mappings.toggle_chat.mode,
-            opts.key_mappings.toggle_chat.lhs,
-            "<cmd>EchoChat<CR>",
-            { noremap = true, silent = true }
-        )
-    end
-end
-
 local function start_spinner()
     local win_width = vim.api.nvim_win_get_width(state.winid)
     local win_height = vim.api.nvim_win_get_height(state.winid)
@@ -63,6 +41,7 @@ local function start_spinner()
     local text_col = math.floor((win_width - 1) / 2)
 
     local options = {
+        -- Relative to chat window
         relative = "win",
         win = state.winid,
         width = 1,
@@ -113,72 +92,10 @@ local function stop_spinner()
     end
 end
 
--- Wrap text to fit within the specified width
-local function wrap_text(text, width)
-    local lines = {}
-    local current_line = ""
-
-    -- Split the text by spaces to get individual words
-    for word in text:gmatch("%S+") do
-        -- Check if adding the next word would exceed the width
-        if #current_line + #word + (current_line == "" and 0 or 1) > width then
-            -- If so, push the current line and start a new one with the current word
-            table.insert(lines, current_line)
-            current_line = word
-        else
-            -- Otherwise, just add the word to the current line
-            if current_line == "" then
-                current_line = word
-            else
-                current_line = current_line .. " " .. word
-            end
-        end
-    end
-
-    -- Add the last line if there is any remaining text
-    if #current_line > 0 then
-        table.insert(lines, current_line)
-    end
-
-    return lines
-end
-
-local function generate_completion(prompt, callback)
-    -- Currently not streaming response
-    Curl.post("http://localhost:11434/api/generate", {
-        body = vim.fn.json_encode({
-            model = state.opts.model,
-            prompt = prompt,
-            options = {
-                temperature = state.opts.model_options.temperature or 0.8,
-                seed = state.opts.model_options.seed or 0,
-                num_ctx = state.opts.model_options.num_ctx or 2048,
-                num_predict = state.opts.model_options.num_predict or -1,
-            },
-            system = state.opts.model_options.system_prompt or "",
-            stream = false,
-        }),
-        on_error = function(err)
-            if err.exit == 7 then
-                error(
-                    "ollama server not running. start it with the command `ollama serve` in a separate terminal/session"
-                )
-            else
-                M.print(err)
-            end
-        end,
-        callback = function(res)
-            vim.schedule(function()
-                callback(vim.fn.json_decode(res.body))
-            end)
-        end,
-    })
-end
-
 local function append_server_response(prompt)
     start_spinner()
 
-    generate_completion(prompt, function(response)
+    LLM.generate_completion(state.opts, prompt, function(response)
         stop_spinner()
 
         -- Left-aligned column for response (how far from the left of window)
@@ -191,7 +108,8 @@ local function append_server_response(prompt)
         local wrapped_response = {}
         for line in response.response:gmatch("([^\n]+)") do
             -- Wrap each line of the response to fit within the buffer width
-            local wrapped_line = wrap_text(line, math.floor(win_width - 3))
+            local wrapped_line =
+                Utils.wrap_text(line, math.floor(win_width - 3))
 
             -- wrap_text returns a table of strings, so we need to insert each of them
             for _, wrapped_subline in ipairs(wrapped_line) do
@@ -238,7 +156,7 @@ local function append_user_prompt(prompt)
     local wrapped_prompt = {}
 
     local line_start = 1
-    local wrap_width = math.floor((win_width / 2) - 2)
+    local wrap_width = math.floor(win_width * 0.6)
 
     --[[
         The prompt buffer is a single line, so we manually split it into
@@ -342,6 +260,27 @@ local function setup_keymaps(key_mappings)
     end
 end
 
+function M.init_chat_window_opts(opts)
+    state.opts = opts or {}
+
+    -- Set default values for chat opts
+    state.opts.model = state.opts.model or ""
+    state.opts.model_options = state.opts.model_options or {}
+    state.opts.window = state.opts.window or {}
+    state.opts.prompt = state.opts.prompt or {}
+    state.opts.key_mappings = state.opts.key_mappings or {}
+
+    -- Set toggle chat key mapping on initialization
+    if opts.key_mappings.toggle_chat then
+        vim.keymap.set(
+            opts.key_mappings.toggle_chat.mode,
+            opts.key_mappings.toggle_chat.lhs,
+            "<cmd>EchoChat<CR>",
+            { noremap = true, silent = true }
+        )
+    end
+end
+
 function M.create_chat_window()
     local function get_window_dimensions(user_width)
         local width =
@@ -417,7 +356,6 @@ function M.create_chat_window()
 
     Prompt.init_prompt_input_opts({
         model = state.opts.model,
-        model_options = state.opts.model_options,
         prompt = {
             prompt_position = state.opts.prompt.prompt_position,
             title = state.opts.prompt.title,
@@ -443,6 +381,7 @@ function M.create_chat_window()
     setup_keymaps(state.opts.key_mappings)
 end
 
+-- User command to toggle chat window
 vim.api.nvim_create_user_command("EchoChat", function()
     if not vim.api.nvim_win_is_valid(state.winid) then
         M.create_chat_window()

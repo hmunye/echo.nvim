@@ -21,7 +21,6 @@ function M.init_prompt_input_opts(opts)
 
     -- Set default values for prompt opts
     state.opts.model = state.opts.model or ""
-    state.opts.model_options = state.opts.model_options or {}
     state.opts.prompt = state.opts.prompt or {}
     state.opts.start_insert_mode = state.opts.start_insert_mode or true
     state.opts.parent_window = state.opts.parent_window or {}

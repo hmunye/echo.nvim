@@ -27,6 +27,35 @@ function M.set_buf_lines(buf, start, ending, strict_indexing, replacement)
     vim.api.nvim_set_option_value("modifiable", isModifiable, { buf = buf })
 end
 
+function M.wrap_text(text, width)
+    local lines = {}
+    local current_line = ""
+
+    -- Split the text by spaces to get individual words
+    for word in text:gmatch("%S+") do
+        -- Check if adding the next word would exceed the width
+        if #current_line + #word + (current_line == "" and 0 or 1) > width then
+            -- If so, push the current line and start a new one with the current word
+            table.insert(lines, current_line)
+            current_line = word
+        else
+            -- Otherwise, just add the word to the current line
+            if current_line == "" then
+                current_line = word
+            else
+                current_line = current_line .. " " .. word
+            end
+        end
+    end
+
+    -- Add the last line if there is any remaining text
+    if #current_line > 0 then
+        table.insert(lines, current_line)
+    end
+
+    return lines
+end
+
 ---@param command string
 function M.is_command_installed(command)
     Job:new({

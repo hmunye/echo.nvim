@@ -42,7 +42,7 @@ Echo.setup({
     },
     prompt = {
         prompt_position = "bottom", -- position of the prompt relative to chat window, "top" or "bottom" (Default: "bottom")
-        title = "", -- title of prompt window (Default: model's name)
+        title = nil, -- title of prompt window (Default: model's name)
         title_position = "left", -- position of title. "center", "left", or "right" (Default: "left")
         border = "rounded", -- border style for the window (Default: "rounded")
         start_insert_mode = true, -- start with prompt in insert mode (Default: true)
