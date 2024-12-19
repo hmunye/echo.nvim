@@ -1,5 +1,6 @@
 local Utils = require("echo.utils")
 local Prompt = require("echo.prompt_input")
+local Curl = require("plenary.curl")
 
 local M = {}
 
@@ -31,6 +32,27 @@ local state = {
         },
     },
 }
+
+function M.init_chat_window_opts(opts)
+    state.opts = opts or {}
+
+    -- Set default values for chat opts
+    state.opts.model = state.opts.model or ""
+    state.opts.model_options = state.opts.model_options or {}
+    state.opts.window = state.opts.window or {}
+    state.opts.prompt = state.opts.prompt or {}
+    state.opts.key_mappings = state.opts.key_mappings or {}
+
+    -- Set toggle chat key mapping on initialization
+    if opts.key_mappings.toggle_chat then
+        vim.keymap.set(
+            opts.key_mappings.toggle_chat.mode,
+            opts.key_mappings.toggle_chat.lhs,
+            "<cmd>EchoChat<CR>",
+            { noremap = true, silent = true }
+        )
+    end
+end
 
 local function set_buf_lines(buf, start, ending, strict_indexing, replacement)
     local isModifiable =
@@ -98,38 +120,93 @@ local function stop_spinner()
     end
 end
 
-local function wrap_text(text, max_width)
-    -- Wrap text into lines with a maximum width
+-- Wrap text to fit within the specified width
+local function wrap_text(text, width)
     local lines = {}
+    local current_line = ""
 
-    while #text > max_width do
-        local space_pos = text:sub(1, max_width):match(".*%s()")
-        if space_pos then
-            table.insert(lines, text:sub(1, space_pos - 1))
-            text = text:sub(space_pos + 1)
+    -- Split the text by spaces to get individual words
+    for word in text:gmatch("%S+") do
+        -- Check if adding the next word would exceed the width
+        if #current_line + #word + (current_line == "" and 0 or 1) > width then
+            -- If so, push the current line and start a new one with the current word
+            table.insert(lines, current_line)
+            current_line = word
         else
-            table.insert(lines, text:sub(1, max_width))
-            text = text:sub(max_width + 1)
+            -- Otherwise, just add the word to the current line
+            if current_line == "" then
+                current_line = word
+            else
+                current_line = current_line .. " " .. word
+            end
         end
     end
 
-    table.insert(lines, text) -- Append the remainder of the text
+    -- Add the last line if there is any remaining text
+    if #current_line > 0 then
+        table.insert(lines, current_line)
+    end
 
     return lines
+end
+
+local function generate_completion(prompt, callback)
+    -- Currently not streaming response
+    Curl.post("http://localhost:11434/api/generate", {
+        body = vim.fn.json_encode({
+            model = state.opts.model,
+            prompt = prompt,
+            option = {
+                temperature = state.opts.model_options.temperature or 0.8,
+                seed = state.opts.model_options.seed or 0,
+                num_ctx = state.opts.model_options.num_ctx or 2048,
+                num_predict = state.opts.model_options.num_predict or -1,
+            },
+            system = state.opts.model_options.system_prompt or "",
+            stream = false,
+        }),
+        on_error = function(err)
+            if err.exit == 7 then
+                error(
+                    "ollama server not running. start it with the command `ollama serve` in a separate terminal/session"
+                )
+            else
+                M.print(err)
+            end
+        end,
+        callback = function(res)
+            vim.schedule(function()
+                callback(vim.fn.json_decode(res.body))
+            end)
+        end,
+    })
 end
 
 local function append_server_response(prompt)
     start_spinner()
 
-    vim.defer_fn(function()
+    -- Call the generate_completion function and handle the response via callback
+    generate_completion(prompt, function(response)
         stop_spinner()
-
-        local response = "This is Ollama responding to " .. prompt
 
         -- Left-aligned column for response
         local text_col = 0
 
         local lines = vim.api.nvim_buf_get_lines(state.bufnr, 0, -1, false)
+
+        local win_width = vim.api.nvim_win_get_width(state.winid)
+
+        local wrapped_response = {}
+        for line in response.response:gmatch("([^\n]+)") do
+            -- Wrap each line of the response to fit within the buffer width
+            local wrapped_line =
+                wrap_text(line, math.floor((win_width / 2) - 2))
+
+            -- wrap_text returns a table of strings, so we need to insert each of them
+            for _, wrapped_subline in ipairs(wrapped_line) do
+                table.insert(wrapped_response, wrapped_subline)
+            end
+        end
 
         -- Number of padding lines before the response
         local padding_lines = 3
@@ -147,12 +224,6 @@ local function append_server_response(prompt)
             )
         end
 
-        local win_width = vim.api.nvim_win_get_width(state.winid)
-
-        -- Wrap the response text to fit within the specified width in buffer
-        local wrapped_response =
-            wrap_text(response, math.floor((win_width / 2) - 3))
-
         -- Append each server response line
         for _, line in ipairs(wrapped_response) do
             set_buf_lines(
@@ -164,7 +235,7 @@ local function append_server_response(prompt)
             )
             last_row = last_row + 1
         end
-    end, 2000) -- Wait for 2 seconds to simulate a delay
+    end)
 end
 
 local function append_user_prompt(prompt)
@@ -175,8 +246,6 @@ local function append_user_prompt(prompt)
 
     -- Wrap the prompt text to fit within the specified width in buffer
     local wrapped_prompt = wrap_text(prompt, math.floor((win_width / 2) - 3))
-
-    Utils.print(trimmed_line)
 
     -- If it's the first prompt, overwrite the welcome message
     if #lines == 2 and trimmed_line == "What can I help with?" then
@@ -252,27 +321,6 @@ local function setup_keymaps(key_mappings)
             key_mappings.submit_prompt.lhs,
             "<cmd>EchoSubmitPrompt<CR>",
             { buffer = state.prompt.bufnr, noremap = true, silent = true }
-        )
-    end
-end
-
-function M.init_chat_window_opts(opts)
-    state.opts = opts or {}
-
-    -- Set default values for chat opts
-    state.opts.model = state.opts.model or ""
-    state.opts.model_options = state.opts.model_options or {}
-    state.opts.window = state.opts.window or {}
-    state.opts.prompt = state.opts.prompt or {}
-    state.opts.key_mappings = state.opts.key_mappings or {}
-
-    -- Set toggle chat key mapping on initialization
-    if opts.key_mappings.toggle_chat then
-        vim.keymap.set(
-            opts.key_mappings.toggle_chat.mode,
-            opts.key_mappings.toggle_chat.lhs,
-            "<cmd>EchoChat<CR>",
-            { noremap = true, silent = true }
         )
     end
 end

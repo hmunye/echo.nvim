@@ -68,6 +68,31 @@ function M.create_prompt_input()
     return { bufnr = state.bufnr, winid = state.winid }
 end
 
+-- function M.close_prompt_input()
+--     if not bufnr then
+--         return
+--     end
+--
+--     if vim.api.nvim_get_mode().mode == "i" then
+--         vim.cmd([[stopinsert]])
+--     end
+--
+--     if winid and vim.api.nvim_win_is_valid(winid) then
+--         vim.api.nvim_win_close(winid, true)
+--         winid = nil
+--     end
+--
+--     if bufnr and vim.api.nvim_buf_is_valid(bufnr) then
+--         vim.api.nvim_buf_delete(bufnr, { force = true })
+--         bufnr = nil
+--     end
+--
+--     if augroup then
+--         vim.api.nvim_del_augroup_by_id(augroup)
+--         augroup = nil
+--     end
+-- end
+
 vim.api.nvim_create_user_command("EchoSubmitPrompt", function()
     local input = get_input()
 
