@@ -1,7 +1,12 @@
+local Prompt = require("echo.prompt_input")
+
 local M = {}
 
 local state = {
     opts = {},
+    prompt = {
+        winid = -1,
+    },
     bufnr = -1,
     winid = -1,
 }
@@ -18,7 +23,7 @@ function M.create_chat_window()
     local function get_window_dimensions(user_width)
         local width =
             math.floor(vim.api.nvim_win_get_width(0) * (user_width / 100))
-        local height = math.floor(vim.api.nvim_win_get_height(0) * 0.85)
+        local height = math.floor(vim.api.nvim_win_get_height(0) * 0.90)
 
         return width, height
     end
@@ -51,6 +56,22 @@ function M.create_chat_window()
         title = state.opts.window.title or "ECHO",
         title_pos = "center",
     })
+
+    vim.api.nvim_set_option_value("modifiable", false, { buf = state.bufnr })
+
+    Prompt.init_prompt_input_opts({
+        model = state.opts.model,
+        window = {},
+        parent_window = {
+            winid = state.winid,
+            width = win_width,
+            col = col,
+        },
+    })
+
+    local prompt = Prompt.create_prompt_input()
+
+    state.prompt.winid = prompt.winid
 end
 
 vim.api.nvim_create_user_command("EchoChat", function()
@@ -58,6 +79,7 @@ vim.api.nvim_create_user_command("EchoChat", function()
         M.create_chat_window()
     else
         vim.api.nvim_win_hide(state.winid)
+        vim.api.nvim_win_hide(state.prompt.winid)
     end
 end, {})
 
