@@ -22,33 +22,38 @@ Echo.setup = function(opts)
     Utils.is_model_available(opts.model)
 
     Chat.init_chat_window_opts(opts)
-
-    vim.keymap.set("n", "<leader>c", "<cmd>EchoChat<CR>")
 end
 
--- TODO: Implement options
 Echo.setup({
-    model = "llama3.1:latest",
+    model = "llama3.1:latest", -- REQUIRED
     model_options = {
         temperature = 0.8, -- model temperature for creativity/randomness (Default: 0.8)
         seed = 0, -- random seed for repeatable output (Default: 0)
         num_ctx = 2048, -- sets the size of the context window used to generate the next token (Default: 2048)
         num_predict = -1, -- maximum number of tokens to generate (Default: -1 for unlimited generation)
-        system_prompt = "", -- system message to set the context or behavior of the model (e.g., defining role or guidelines)
+        system_prompt = "", -- system message to set the context or behavior of the model (Default: "")
     },
     window = {
-        position = "right", -- the position of the window (right or left)
-        width = 30, -- % of current window width
-        title = "", -- title of window
-        border = "rounded", -- border style for the window (rounded, single, double, etc.)
+        position = "right", -- the position of the window, right or left (Default: "right")
+        width = 30, -- % of current window width (Default: 35)
+        title = "", -- title of window (Default: "ECHO")
+        border = "rounded", -- border style for the window, rounded, single, double, etc. (Default: "rounded")
     },
     prompt = {
-        prompt_position = "bottom", -- position of the prompt relative to chat window (top or bottom)
+        prompt_position = "bottom", -- position of the prompt relative to chat window, top or bottom (Default: "bottom")
+        title = "", -- title of prompt window (Default: model's name)
+        border = "single", -- border style for the window, rounded, single, double, etc. (Default: "rounded")
+        start_insert_mode = true, -- start with prompt in insert mode (Default: true)
     },
-    start_insert_mode = true, -- start with prompt in insert mode
     key_mappings = {
-        toggle = "<Esc>", -- toggle the chat window
-        submit_prompt = "<Enter>", -- send prompt request
+        toggle_chat = {
+            mode = { "n" },
+            lhs = "<C-c>",
+        },
+        submit_prompt = {
+            mode = { "n", "i" },
+            lhs = "<CR>",
+        },
     },
 })
 
