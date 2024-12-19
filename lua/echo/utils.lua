@@ -19,6 +19,14 @@ function M.trim(str)
     return str:gsub("^%s+", ""):gsub("%s+$", "")
 end
 
+function M.set_buf_lines(buf, start, ending, strict_indexing, replacement)
+    local isModifiable =
+        vim.api.nvim_get_option_value("modifiable", { buf = buf })
+    vim.api.nvim_set_option_value("modifiable", true, { buf = buf })
+    vim.api.nvim_buf_set_lines(buf, start, ending, strict_indexing, replacement)
+    vim.api.nvim_set_option_value("modifiable", isModifiable, { buf = buf })
+end
+
 ---@param command string
 function M.is_command_installed(command)
     Job:new({

@@ -11,8 +11,7 @@ local function get_input()
         return ""
     end
 
-    -- Return all lines in the buffer as a single string, joining them with
-    -- newline characters
+    -- Return all lines in the buffer as a single string
     local lines = vim.api.nvim_buf_get_lines(state.bufnr, 0, -1, false)
     return table.concat(lines, " ")
 end

@@ -24,14 +24,13 @@ Echo.setup = function(opts)
     Chat.init_chat_window_opts(opts)
 end
 
--- Full Setup
 Echo.setup({
     model = "llama3.1:latest", -- REQUIRED
     model_options = {
         temperature = 0.8, -- model temperature for creativity/randomness (Default: 0.8)
         seed = 0, -- random seed for repeatable output (Default: 0)
         num_ctx = 2048, -- sets the size of the context window used to generate the next token (Default: 2048)
-        num_predict = -1, -- maximum number of tokens to generate (Default: -1 for unlimited generation)
+        num_predict = -1, -- maximum number of tokens the model is allowed to generate (Default: -1 for unlimited generation)
         system_prompt = "", -- system message to set the context or behavior of the model (Default: "")
     },
     window = {

@@ -1,6 +1,7 @@
+local Curl = require("plenary.curl")
+
 local Utils = require("echo.utils")
 local Prompt = require("echo.prompt_input")
-local Curl = require("plenary.curl")
 
 local M = {}
 
@@ -54,14 +55,6 @@ function M.init_chat_window_opts(opts)
     end
 end
 
-local function set_buf_lines(buf, start, ending, strict_indexing, replacement)
-    local isModifiable =
-        vim.api.nvim_get_option_value("modifiable", { buf = buf })
-    vim.api.nvim_set_option_value("modifiable", true, { buf = buf })
-    vim.api.nvim_buf_set_lines(buf, start, ending, strict_indexing, replacement)
-    vim.api.nvim_set_option_value("modifiable", isModifiable, { buf = buf })
-end
-
 local function start_spinner()
     local win_width = vim.api.nvim_win_get_width(state.winid)
     local win_height = vim.api.nvim_win_get_height(state.winid)
@@ -91,7 +84,7 @@ local function start_spinner()
         100,
         vim.schedule_wrap(function()
             if vim.api.nvim_buf_is_valid(state.spinner.bufnr) then
-                set_buf_lines(
+                Utils.set_buf_lines(
                     state.spinner.bufnr,
                     0,
                     -1,
@@ -156,7 +149,7 @@ local function generate_completion(prompt, callback)
         body = vim.fn.json_encode({
             model = state.opts.model,
             prompt = prompt,
-            option = {
+            options = {
                 temperature = state.opts.model_options.temperature or 0.8,
                 seed = state.opts.model_options.seed or 0,
                 num_ctx = state.opts.model_options.num_ctx or 2048,
@@ -185,12 +178,11 @@ end
 local function append_server_response(prompt)
     start_spinner()
 
-    -- Call the generate_completion function and handle the response via callback
     generate_completion(prompt, function(response)
         stop_spinner()
 
-        -- Left-aligned column for response
-        local text_col = 0
+        -- Left-aligned column for response (how far from the left of window)
+        local text_col = 2
 
         local lines = vim.api.nvim_buf_get_lines(state.bufnr, 0, -1, false)
 
@@ -199,8 +191,7 @@ local function append_server_response(prompt)
         local wrapped_response = {}
         for line in response.response:gmatch("([^\n]+)") do
             -- Wrap each line of the response to fit within the buffer width
-            local wrapped_line =
-                wrap_text(line, math.floor((win_width / 2) - 2))
+            local wrapped_line = wrap_text(line, math.floor(win_width - 3))
 
             -- wrap_text returns a table of strings, so we need to insert each of them
             for _, wrapped_subline in ipairs(wrapped_line) do
@@ -215,7 +206,7 @@ local function append_server_response(prompt)
 
         -- Append padding lines (empty lines for spacing)
         for i = 1, padding_lines do
-            set_buf_lines(
+            Utils.set_buf_lines(
                 state.bufnr,
                 last_row + i - 1,
                 last_row + i,
@@ -226,7 +217,7 @@ local function append_server_response(prompt)
 
         -- Append each server response line
         for _, line in ipairs(wrapped_response) do
-            set_buf_lines(
+            Utils.set_buf_lines(
                 state.bufnr,
                 last_row + padding_lines,
                 last_row + padding_lines + 1,
@@ -244,36 +235,58 @@ local function append_user_prompt(prompt)
     local lines = vim.api.nvim_buf_get_lines(state.bufnr, 0, -1, false)
     local trimmed_line = Utils.trim(lines[2])
 
-    -- Wrap the prompt text to fit within the specified width in buffer
-    local wrapped_prompt = wrap_text(prompt, math.floor((win_width / 2) - 3))
+    local wrapped_prompt = {}
 
-    -- If it's the first prompt, overwrite the welcome message
+    local line_start = 1
+    local wrap_width = math.floor((win_width / 2) - 2)
+
+    --[[
+        The prompt buffer is a single line, so we manually split it into
+        multiple chunks, wrapping at the specified width
+    --]]
+    while line_start <= #prompt do
+        -- Get the next chunk of the prompt
+        local line_end = math.min(line_start + wrap_width - 1, #prompt)
+
+        local wrapped_line = prompt:sub(line_start, line_end)
+
+        -- Add this wrapped line to the wrapped_prompt table
+        table.insert(wrapped_prompt, wrapped_line)
+
+        line_start = line_end + 1
+    end
+
+    -- Number of padding lines before the prompt
+    local padding_lines = 3
+
+    local last_row = #lines + 1
+
+    -- If it's the first prompt, overwrite the welcome message with the prompt
     if #lines == 2 and trimmed_line == "What can I help with?" then
-        -- Overwrite the welcome message with the prompt
         for index, line in ipairs(wrapped_prompt) do
-            -- Recalculate text_col for each wrapped line
-            local line_text_col = win_width - #line - 1
+            -- Calculate the padding needed to right-align the text
+            -- (how far from the right of window)
+            local padding_needed = win_width - #line - 2
 
-            set_buf_lines(
+            -- Ensure padding isn't negative (handle very short lines or buffer issues)
+            padding_needed = math.max(padding_needed, 0)
+
+            -- Set the line in the buffer, right-aligned
+            Utils.set_buf_lines(
                 state.bufnr,
                 index,
                 index + 1,
                 false,
-                { string.rep(" ", line_text_col) .. line }
+                { string.rep(" ", padding_needed) .. line }
             )
         end
     else
-        local last_row = #lines
-
-        -- Number of padding lines before the prompt
-        local padding_lines = 3
-
         -- Append padding lines (empty lines for spacing)
         for i = 1, padding_lines do
-            set_buf_lines(
+            Utils.set_buf_lines(
                 state.bufnr,
+                last_row + i - 1,
                 last_row + i,
-                last_row + i + 1,
                 false,
                 { "" }
             )
@@ -281,8 +294,12 @@ local function append_user_prompt(prompt)
 
         -- Append each wrapped prompt line, adjusting for right alignment
         for _, line in ipairs(wrapped_prompt) do
-            -- Recalculate text_col for each wrapped line
-            local line_text_col = win_width - #line - 1
+            -- Calculate the padding needed to right-align the text
+            -- (how far from the right of window)
+            local padding_needed = win_width - #line - 2
+
+            -- Ensure padding isn't negative (handle very short lines or buffer issues)
+            padding_needed = math.max(padding_needed, 0)
 
             -- Check if we are near the end of the buffer and extend if necessary
             if
@@ -290,7 +307,7 @@ local function append_user_prompt(prompt)
                 >= vim.api.nvim_buf_line_count(state.bufnr)
             then
                 -- Extend buffer if it's near the end
-                set_buf_lines(
+                Utils.set_buf_lines(
                     state.bufnr,
                     vim.api.nvim_buf_line_count(state.bufnr),
                     -1,
@@ -299,12 +316,12 @@ local function append_user_prompt(prompt)
                 )
             end
 
-            set_buf_lines(
+            Utils.set_buf_lines(
                 state.bufnr,
                 last_row + padding_lines,
                 last_row + padding_lines + 1,
                 false,
-                { string.rep(" ", line_text_col) .. line }
+                { string.rep(" ", padding_needed) .. line }
             )
 
             last_row = last_row + 1
@@ -387,7 +404,7 @@ function M.create_chat_window()
     -- If the buffer is empty or doesn't already contain a line of text, set it
     -- (Assuming one line of text means only the welcome message is present)
     if #lines < 2 then
-        set_buf_lines(
+        Utils.set_buf_lines(
             state.bufnr,
             text_row,
             text_row,
