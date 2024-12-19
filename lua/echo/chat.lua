@@ -11,6 +11,7 @@ local state = {
     },
     bufnr = -1,
     winid = -1,
+    -- https://github.com/jellydn/spinner.nvim
     spinner = {
         index = 1,
         timer = nil,
@@ -97,43 +98,151 @@ local function stop_spinner()
     end
 end
 
-local function append_user_prompt(input)
+local function wrap_text(text, max_width)
+    -- Wrap text into lines with a maximum width
+    local lines = {}
+
+    while #text > max_width do
+        local space_pos = text:sub(1, max_width):match(".*%s()")
+        if space_pos then
+            table.insert(lines, text:sub(1, space_pos - 1))
+            text = text:sub(space_pos + 1)
+        else
+            table.insert(lines, text:sub(1, max_width))
+            text = text:sub(max_width + 1)
+        end
+    end
+
+    table.insert(lines, text) -- Append the remainder of the text
+
+    return lines
+end
+
+local function append_server_response(prompt)
     start_spinner()
 
     vim.defer_fn(function()
         stop_spinner()
 
-        local response = "This is a response to your prompt: " .. input
-        local win_width = vim.api.nvim_win_get_width(state.winid)
-        local win_height = vim.api.nvim_win_get_height(state.winid)
+        local response = "This is Ollama responding to " .. prompt
 
-        local text_col = math.floor((win_width - #response) / 2)
+        -- Left-aligned column for response
+        local text_col = 0
 
         local lines = vim.api.nvim_buf_get_lines(state.bufnr, 0, -1, false)
-        local trimmed_line = Utils.trim(lines[2])
 
-        if #lines == 2 and trimmed_line == "What can I help with?" then
-            -- Overwrite the welcome message with the response
+        -- Number of padding lines before the response
+        local padding_lines = 3
+
+        local last_row = #lines + 1
+
+        -- Append padding lines (empty lines for spacing)
+        for i = 1, padding_lines do
             set_buf_lines(
                 state.bufnr,
-                1, -- Replace the line
-                2,
+                last_row + i - 1,
+                last_row + i,
                 false,
-                { string.rep(" ", text_col) .. response }
-            )
-        else
-            local text_row = math.floor(win_height / 2)
-
-            -- Append the response
-            set_buf_lines(
-                state.bufnr,
-                text_row + 1, -- Place the response on the next line
-                text_row + 2, -- Avoid overwriting
-                false,
-                { string.rep(" ", text_col) .. response }
+                { "" }
             )
         end
+
+        local win_width = vim.api.nvim_win_get_width(state.winid)
+
+        -- Wrap the response text to fit within the specified width in buffer
+        local wrapped_response =
+            wrap_text(response, math.floor((win_width / 2) - 3))
+
+        -- Append each server response line
+        for _, line in ipairs(wrapped_response) do
+            set_buf_lines(
+                state.bufnr,
+                last_row + padding_lines,
+                last_row + padding_lines + 1,
+                false,
+                { string.rep(" ", text_col) .. line }
+            )
+            last_row = last_row + 1
+        end
     end, 2000) -- Wait for 2 seconds to simulate a delay
+end
+
+local function append_user_prompt(prompt)
+    local win_width = vim.api.nvim_win_get_width(state.winid)
+
+    local lines = vim.api.nvim_buf_get_lines(state.bufnr, 0, -1, false)
+    local trimmed_line = Utils.trim(lines[2])
+
+    -- Wrap the prompt text to fit within the specified width in buffer
+    local wrapped_prompt = wrap_text(prompt, math.floor((win_width / 2) - 3))
+
+    Utils.print(trimmed_line)
+
+    -- If it's the first prompt, overwrite the welcome message
+    if #lines == 2 and trimmed_line == "What can I help with?" then
+        -- Overwrite the welcome message with the prompt
+        for index, line in ipairs(wrapped_prompt) do
+            -- Recalculate text_col for each wrapped line
+            local line_text_col = win_width - #line - 1
+
+            set_buf_lines(
+                state.bufnr,
+                index,
+                index + 1,
+                false,
+                { string.rep(" ", line_text_col) .. line }
+            )
+        end
+    else
+        local last_row = #lines
+
+        -- Number of padding lines before the prompt
+        local padding_lines = 3
+
+        -- Append padding lines (empty lines for spacing)
+        for i = 1, padding_lines do
+            set_buf_lines(
+                state.bufnr,
+                last_row + i,
+                last_row + i + 1,
+                false,
+                { "" }
+            )
+        end
+
+        -- Append each wrapped prompt line, adjusting for right alignment
+        for _, line in ipairs(wrapped_prompt) do
+            -- Recalculate text_col for each wrapped line
+            local line_text_col = win_width - #line - 1
+
+            -- Check if we are near the end of the buffer and extend if necessary
+            if
+                last_row + padding_lines
+                >= vim.api.nvim_buf_line_count(state.bufnr)
+            then
+                -- Extend buffer if it's near the end
+                set_buf_lines(
+                    state.bufnr,
+                    vim.api.nvim_buf_line_count(state.bufnr),
+                    -1,
+                    false,
+                    { "" }
+                )
+            end
+
+            set_buf_lines(
+                state.bufnr,
+                last_row + padding_lines,
+                last_row + padding_lines + 1,
+                false,
+                { string.rep(" ", line_text_col) .. line }
+            )
+
+            last_row = last_row + 1
+        end
+    end
+
+    append_server_response(prompt)
 end
 
 local function setup_keymaps(key_mappings)
@@ -213,6 +322,7 @@ function M.create_chat_window()
         title_pos = state.opts.window.title_position or "center",
     })
 
+    vim.api.nvim_set_option_value("wrap", true, { win = state.winid })
     vim.api.nvim_set_option_value("modifiable", true, { buf = state.bufnr })
 
     -- Get current lines in buffer

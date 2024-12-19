@@ -11,7 +11,10 @@ local function get_input()
         return ""
     end
 
-    return vim.api.nvim_buf_get_lines(state.bufnr, 0, -1, false)[1] or ""
+    -- Return all lines in the buffer as a single string, joining them with
+    -- newline characters
+    local lines = vim.api.nvim_buf_get_lines(state.bufnr, 0, -1, false)
+    return table.concat(lines, " ")
 end
 
 function M.init_prompt_input_opts(opts)

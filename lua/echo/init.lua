@@ -24,6 +24,7 @@ Echo.setup = function(opts)
     Chat.init_chat_window_opts(opts)
 end
 
+-- Full Setup
 Echo.setup({
     model = "llama3.1:latest", -- REQUIRED
     model_options = {
@@ -36,7 +37,7 @@ Echo.setup({
     window = {
         position = "right", -- the position of the window, "right" or "left" (Default: "right")
         width = 35, -- % of current window width (Default: 35)
-        title = "", -- title of window (Default: "ECHO")
+        title = nil, -- title of window (Default: "ECHO")
         title_position = "center", -- position of title. "center", "left", or "right" (Default: "center")
         border = "rounded", -- border style for the window (Default: "rounded")
     },
