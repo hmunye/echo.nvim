@@ -102,7 +102,7 @@ local function append_server_response(prompt, win_width)
     state.prompt.is_processing = true
     start_spinner()
 
-    LLM.generate_completion(state.opts, prompt, function(response)
+    LLM.generate_chat(state.opts, prompt, function(response)
         state.prompt.is_processing = false
         stop_spinner()
 
@@ -112,7 +112,7 @@ local function append_server_response(prompt, win_width)
         local lines = vim.api.nvim_buf_get_lines(state.bufnr, 0, -1, false)
 
         local wrapped_response = {}
-        for line in response.response:gmatch("([^\n]+)") do
+        for line in response:gmatch("([^\n]+)") do
             -- Wrap each line of the response to fit within the buffer width
             local wrapped_line =
                 Utils.wrap_text(line, math.floor(win_width - 3))
