@@ -6,6 +6,14 @@ local state = {
     winid = -1,
 }
 
+local function get_input()
+    if not vim.api.nvim_buf_is_valid(state.bufnr) then
+        return ""
+    end
+
+    return vim.api.nvim_buf_get_lines(state.bufnr, 0, -1, false)[1] or ""
+end
+
 function M.init_prompt_input_opts(opts)
     state.opts = opts or {}
 
@@ -15,6 +23,7 @@ function M.init_prompt_input_opts(opts)
     state.opts.prompt = state.opts.prompt or {}
     state.opts.start_insert_mode = state.opts.start_insert_mode or true
     state.opts.parent_window = state.opts.parent_window or {}
+    state.opts.submit_callback = state.opts.submit_callback or nil
 end
 
 function M.create_prompt_input()
@@ -23,7 +32,7 @@ function M.create_prompt_input()
     end
 
     local height = math.floor(
-        vim.api.nvim_win_get_height(state.opts.parent_window.winid) * 0.05
+        vim.api.nvim_win_get_height(state.opts.parent_window.winid) * 0.10
     )
 
     -- Default to bottom
@@ -42,7 +51,7 @@ function M.create_prompt_input()
         border = state.opts.prompt.border or "rounded",
         style = "minimal",
         title = state.opts.prompt.title or state.opts.model,
-        title_pos = "left",
+        title_pos = state.opts.prompt.title_position or "left",
     })
 
     vim.api.nvim_set_option_value("wrap", true, { win = state.winid })
@@ -56,18 +65,21 @@ function M.create_prompt_input()
     return { bufnr = state.bufnr, winid = state.winid }
 end
 
-local function get_input()
-    if not vim.api.nvim_buf_is_valid(state.bufnr) then
-        return ""
+vim.api.nvim_create_user_command("EchoSubmitPrompt", function()
+    local input = get_input()
+
+    if input == "" then
+        return
     end
 
-    local lines = vim.api.nvim_buf_get_lines(state.bufnr, 0, -1, false)
+    if state.opts.submit_callback then
+        state.opts.submit_callback(input)
+    end
 
-    return lines[1] or ""
-end
-
-vim.api.nvim_create_user_command("EchoSubmitPrompt", function()
-    print(vim.inspect(get_input()))
+    if vim.api.nvim_buf_is_valid(state.bufnr) then
+        -- Clear the prompt after submitting
+        vim.api.nvim_buf_set_lines(state.bufnr, 0, -1, false, {})
+    end
 end, {})
 
 return M

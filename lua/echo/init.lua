@@ -34,15 +34,17 @@ Echo.setup({
         system_prompt = "", -- system message to set the context or behavior of the model (Default: "")
     },
     window = {
-        position = "right", -- the position of the window, right or left (Default: "right")
-        width = 30, -- % of current window width (Default: 35)
+        position = "right", -- the position of the window, "right" or "left" (Default: "right")
+        width = 35, -- % of current window width (Default: 35)
         title = "", -- title of window (Default: "ECHO")
-        border = "rounded", -- border style for the window, rounded, single, double, etc. (Default: "rounded")
+        title_position = "center", -- position of title. "center", "left", or "right" (Default: "center")
+        border = "rounded", -- border style for the window (Default: "rounded")
     },
     prompt = {
-        prompt_position = "bottom", -- position of the prompt relative to chat window, top or bottom (Default: "bottom")
+        prompt_position = "bottom", -- position of the prompt relative to chat window, "top" or "bottom" (Default: "bottom")
         title = "", -- title of prompt window (Default: model's name)
-        border = "single", -- border style for the window, rounded, single, double, etc. (Default: "rounded")
+        title_position = "left", -- position of title. "center", "left", or "right" (Default: "left")
+        border = "rounded", -- border style for the window (Default: "rounded")
         start_insert_mode = true, -- start with prompt in insert mode (Default: true)
     },
     key_mappings = {

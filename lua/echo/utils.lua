@@ -15,6 +15,10 @@ function M.print(...)
     return ...
 end
 
+function M.trim(str)
+    return str:gsub("^%s+", ""):gsub("%s+$", "")
+end
+
 ---@param command string
 function M.is_command_installed(command)
     Job:new({
