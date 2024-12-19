@@ -9,6 +9,7 @@ local state = {
     prompt = {
         bufnr = -1,
         winid = -1,
+        is_processing = false,
     },
     bufnr = -1,
     winid = -1,
@@ -16,8 +17,8 @@ local state = {
     spinner = {
         index = 1,
         timer = nil,
-        bufnr = -1,
-        winid = -1,
+        bufnr = nil,
+        winid = nil,
         frames = {
             "⠋",
             "⠙",
@@ -34,13 +35,17 @@ local state = {
 }
 
 local function start_spinner()
+    if state.spinner.timer then
+        return
+    end
+
     local win_width = vim.api.nvim_win_get_width(state.winid)
     local win_height = vim.api.nvim_win_get_height(state.winid)
 
     local text_row = math.floor(win_height / 2)
     local text_col = math.floor((win_width - 1) / 2)
 
-    local options = {
+    local opts = {
         -- Relative to chat window
         relative = "win",
         win = state.winid,
@@ -54,7 +59,7 @@ local function start_spinner()
     -- Create buffer and window for the spinner
     state.spinner.bufnr = vim.api.nvim_create_buf(false, true)
     state.spinner.winid =
-        vim.api.nvim_open_win(state.spinner.bufnr, false, options)
+        vim.api.nvim_open_win(state.spinner.bufnr, false, opts)
 
     -- Start a timer to cycle through the spinner frames
     state.spinner.timer = vim.loop.new_timer()
@@ -86,24 +91,25 @@ local function stop_spinner()
         if state.spinner.winid then
             vim.api.nvim_win_close(state.spinner.winid, true)
         end
+
         if state.spinner.bufnr then
             vim.api.nvim_buf_delete(state.spinner.bufnr, { force = true })
         end
     end
 end
 
-local function append_server_response(prompt)
+local function append_server_response(prompt, win_width)
+    state.prompt.is_processing = true
     start_spinner()
 
     LLM.generate_completion(state.opts, prompt, function(response)
+        state.prompt.is_processing = false
         stop_spinner()
 
         -- Left-aligned column for response (how far from the left of window)
         local text_col = 2
 
         local lines = vim.api.nvim_buf_get_lines(state.bufnr, 0, -1, false)
-
-        local win_width = vim.api.nvim_win_get_width(state.winid)
 
         local wrapped_response = {}
         for line in response.response:gmatch("([^\n]+)") do
@@ -308,7 +314,7 @@ local function append_user_prompt(prompt)
         end
     end
 
-    append_server_response(prompt)
+    append_server_response(prompt, win_width)
 end
 
 local function setup_keymaps(key_mappings)
@@ -445,11 +451,17 @@ end
 
 -- User command to toggle chat window
 vim.api.nvim_create_user_command("EchoChat", function()
-    if not vim.api.nvim_win_is_valid(state.winid) then
-        M.create_chat_window()
-    else
+    if vim.api.nvim_win_is_valid(state.winid) then
         vim.api.nvim_win_hide(state.winid)
         vim.api.nvim_win_hide(state.prompt.winid)
+
+        stop_spinner()
+    else
+        M.create_chat_window()
+
+        if not state.spinner.timer and state.prompt.is_processing then
+            start_spinner()
+        end
     end
 end, {})
 
