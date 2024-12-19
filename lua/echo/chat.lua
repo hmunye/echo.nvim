@@ -179,24 +179,61 @@ local function append_user_prompt(prompt)
 
     local last_row = #lines + 1
 
+    -- Default prompt highlight group colors
+    local bg_color = state.opts.prompt.bg_color or "#404040"
+    local fg_color = state.opts.prompt.fg_color or "NONE"
+
+    -- Define highlight group for user prompt
+    vim.cmd(
+        string.format(
+            "highlight MyPromptHighlight guibg=%s guifg=%s",
+            bg_color,
+            fg_color
+        )
+    )
+
     -- If it's the first prompt, overwrite the welcome message with the prompt
     if #lines == 2 and trimmed_line == "What can I help with?" then
         for index, line in ipairs(wrapped_prompt) do
             -- Calculate the padding needed to right-align the text
             -- (how far from the right of window)
-            local padding_needed = win_width - #line - 2
+            local padding_needed = win_width - #line - 4
 
             -- Ensure padding isn't negative (handle very short lines or buffer issues)
             padding_needed = math.max(padding_needed, 0)
 
-            -- Set the line in the buffer, right-aligned
+            -- Set the line in the buffer, right-aligned with padding on both sides
+            local full_line = string.rep(" ", padding_needed)
+                .. line
+                .. string.rep(" ", 2)
+
             Utils.set_buf_lines(
                 state.bufnr,
                 index,
                 index + 1,
                 false,
-                { string.rep(" ", padding_needed) .. line }
+                { full_line }
             )
+
+            if #line < wrap_width and index ~= 1 then
+                vim.api.nvim_buf_add_highlight(
+                    state.bufnr,
+                    -1,
+                    "MyPromptHighlight",
+                    index,
+                    win_width - wrap_width - 6,
+                    padding_needed + #line + 2
+                )
+            else
+                vim.api.nvim_buf_add_highlight(
+                    state.bufnr,
+                    -1,
+                    "MyPromptHighlight",
+                    index,
+                    padding_needed - 2,
+                    padding_needed + #line + 2
+                )
+            end
         end
     else
         -- Append padding lines (empty lines for spacing)
@@ -211,10 +248,10 @@ local function append_user_prompt(prompt)
         end
 
         -- Append each wrapped prompt line, adjusting for right alignment
-        for _, line in ipairs(wrapped_prompt) do
+        for index, line in ipairs(wrapped_prompt) do
             -- Calculate the padding needed to right-align the text
             -- (how far from the right of window)
-            local padding_needed = win_width - #line - 2
+            local padding_needed = win_width - #line - 4
 
             -- Ensure padding isn't negative (handle very short lines or buffer issues)
             padding_needed = math.max(padding_needed, 0)
@@ -234,13 +271,38 @@ local function append_user_prompt(prompt)
                 )
             end
 
+            -- Set the line in the buffer, right-aligned with padding on both sides
+            local full_line = string.rep(" ", padding_needed)
+                .. line
+                .. string.rep(" ", 2)
+
             Utils.set_buf_lines(
                 state.bufnr,
                 last_row + padding_lines,
                 last_row + padding_lines + 1,
                 false,
-                { string.rep(" ", padding_needed) .. line }
+                { full_line }
             )
+
+            if #line < wrap_width and index ~= 1 then
+                vim.api.nvim_buf_add_highlight(
+                    state.bufnr,
+                    -1,
+                    "MyPromptHighlight",
+                    last_row + padding_lines,
+                    win_width - wrap_width - 6,
+                    padding_needed + #line + 2
+                )
+            else
+                vim.api.nvim_buf_add_highlight(
+                    state.bufnr,
+                    -1,
+                    "MyPromptHighlight",
+                    last_row + padding_lines,
+                    padding_needed - 2,
+                    padding_needed + #line + 2
+                )
+            end
 
             last_row = last_row + 1
         end
