@@ -125,7 +125,9 @@ local function append_server_response(prompt, win_width)
         stop_spinner()
 
         -- Left-aligned column for response (how far from the left of window)
-        local text_col = 2
+        -- Needs to be 0 for rendered markdown code blocks, gap on the left
+        -- otherwise
+        local text_col = 0
 
         local lines = vim.api.nvim_buf_get_lines(state.bufnr, 0, -1, false)
 
@@ -168,10 +170,19 @@ local function append_server_response(prompt, win_width)
             )
             last_row = last_row + 1
         end
+
+        -- Move the cursor to the chat window after processing
+        vim.api.nvim_set_current_win(state.winid)
+
+        -- BUG: when moving cursor back to chat buffer, if still in insert mode,
+        -- the buffer is modifiable, even if setting the option to false
+        -- after moving cursor
+        vim.cmd([[stopinsert]])
     end)
 end
 
--- TODO: Possibly change prompt to be left aligned instead of right
+-- TODO: Possibly change prompt to be left aligned instead of right, with padding
+-- to simulate right aligned
 local function append_user_prompt(prompt)
     local win_width = vim.api.nvim_win_get_width(state.winid)
 
@@ -181,13 +192,34 @@ local function append_user_prompt(prompt)
     local wrap_width = math.floor(win_width * 0.4)
 
     local wrapped_prompt = {}
-    for line in prompt:gmatch("([^\n]+)") do
-        -- Wrap each line of the prompt to fit within the buffer width
-        local wrapped_line = Utils.wrap_text(line, wrap_width)
 
-        -- wrap_text returns a table of strings, so we need to insert each of them
-        for _, wrapped_subline in ipairs(wrapped_line) do
-            table.insert(wrapped_prompt, wrapped_subline)
+    -- Check if the prompt contains any newline characters
+    if prompt:find("\n") then
+        for line in prompt:gmatch("([^\n]+)") do
+            -- Wrap each line of the prompt to fit within the buffer width
+            local wrapped_line = Utils.wrap_text(line, wrap_width)
+
+            -- wrap_text returns a table of strings, so we need to insert each of them
+            for _, wrapped_subline in ipairs(wrapped_line) do
+                table.insert(wrapped_prompt, wrapped_subline)
+            end
+        end
+    else
+        --[[
+            If the prompt buffer is a single line, we manually split it into
+            multiple chunks, wrapping at the specified width
+        --]]
+        local line_start = 1
+        while line_start <= #prompt do
+            -- Get the next chunk of the prompt
+            local line_end = math.min(line_start + wrap_width - 1, #prompt)
+
+            local wrapped_line = prompt:sub(line_start, line_end)
+
+            -- Add this wrapped line to the wrapped_prompt table
+            table.insert(wrapped_prompt, wrapped_line)
+
+            line_start = line_end + 1
         end
     end
 
@@ -429,6 +461,7 @@ function M.create_chat_window()
         )
     end
 
+    vim.api.nvim_set_option_value("filetype", "markdown", { buf = state.bufnr })
     vim.api.nvim_set_option_value("modifiable", false, { buf = state.bufnr })
 
     Prompt.init_prompt_input_opts({
