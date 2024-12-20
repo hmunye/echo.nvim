@@ -10,11 +10,19 @@
 
 ## TOC
 * [Overview](#overview)
+* [Features](#features)
 * [Installation](#installation)
 * [Usage](#usage)
 
 ## Overview
-**echo.nvim** is a Neovim plugin that integrates local, AI-powered chat and real-time assistance directly into your terminal via Ollama, offering a private and seamless experience within your development environment.
+**echo.nvim** is a Neovim plugin that provides local, AI-driven chat and real-time assistance in your terminal via Ollama, providing a private, seamless experience within your development workflow.
+
+## Features
+- [ ] Option to enable/disable streaming of model responses to chat buffer
+- [ ] Ability to dynamically switch between locally available models
+- [ ] Control over whether the current buffer is included as context for the model
+- [ ] Configuration of model parameters (e.g., temperature, system message)
+- [ ] Support for including chat history (previous prompts and responses) as context in each request 
 
 ## Installation
 
@@ -23,19 +31,19 @@
 - [**Ollama**](https://ollama.com/download)
 - **curl**
 
-### Start the Ollama Server: 
+### Start Ollama Server: 
 You must run the Ollama server to interact with models. Start the server with the following command:
 
 ```bash
 ollama serve
 ```
-### Pull a Model: 
+### Pull Model: 
 You need to download a model to use with Ollama. For example, to pull the `llama3.2:3b` model, run the following command:
 
 ```bash
 ollama pull llama3.2:3b
 ```
-### Setup Plugin:
+### Plugin Setup:
 
 Using [lazy.nvim](https://github.com/folke/lazy.nvim):
 
@@ -108,47 +116,3 @@ return {
 }
 ```
 ## Usage
-
-### `EchoChat` Command:
-
-Used to toggle the visibility of the chat window, spinner, and prompt window
-
-You can customize the key mapping by modifying the key_mappings section. For example, to map the toggle command to the F1 key:
-
-```lua
-key_mappings = {
-    toggle_chat = {
-        mode = { "n" },    -- Normal mode
-        lhs = "<F1>",
-    },
-}
-```
-
-### `EchoSubmitPrompt` Command:
-
-Submits the user's input from the prompt. If the input is non-empty, it will send the request to the local server and clear the input field
-
-You can customize the key mapping by modifying the key mappings section. For example, to map the submit action to Ctrl + Enter:
-
-```lua
-key_mappings = {
-    submit_prompt = {
-        mode = { "n", "i" },  -- Normal and Insert mode
-        lhs = "<C-CR>",
-    },
-}
-```
-
-### `EchoClear` Command:
-
-Clears the chat window buffer. Will not clear the chat history
-
-You can customize the key mapping by modifying the key mappings section. For example, to map the clear chat action to \<leader\> c:
-
-```lua
-key_mappings = {
-    clear_window = {
-        mode = { "n" },    -- Normal mode
-        lhs = "<leader>c",
-    },
-}
