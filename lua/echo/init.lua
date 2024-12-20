@@ -39,10 +39,11 @@ Echo.setup({
     -- Chat window configuration
     window = {
         position = "right", -- The position of the window relative to current window. Options: "right" or "left". (Default: "right")
-        width = 35, -- The width of the window as a percentage of the total available window width. (Default: 35)
-        title = nil, -- The title of the window. (Default: "ECHO")
+        width = 30, -- The width of the window as a percentage of the total available window width. (Default: 35)
+        title = "ECHO", -- The title of the window. (Default: "ECHO")
         title_position = "center", -- The position of the window's title. Options: "center", "left", or "right". (Default: "center")
-        border = "single", -- The style of the window's border. (Default: "rounded")
+        border = "rounded", -- The style of the window's border. (Default: "rounded")
+        spinner_color = "#FFFFFF", -- The color for the spinner highlight. (Default: "#FFFFFF")
     },
 
     -- Prompt configuration

@@ -56,6 +56,14 @@ local function start_spinner()
         style = "minimal",
     }
 
+    -- Default spinner highlight group color
+    local color = state.opts.window.spinner_color or "#FFFFFF"
+
+    -- Define highlight group for spinner
+    vim.cmd(
+        string.format("highlight SpinnerHighlight guibg=NONE guifg=%s", color)
+    )
+
     -- Create buffer and window for the spinner
     state.spinner.bufnr = vim.api.nvim_create_buf(false, true)
     state.spinner.winid =
@@ -75,7 +83,17 @@ local function start_spinner()
                     false,
                     { state.spinner.frames[state.spinner.index] }
                 )
+
+                vim.api.nvim_buf_add_highlight(
+                    state.spinner.bufnr,
+                    -1,
+                    "SpinnerHighlight",
+                    0,
+                    0,
+                    -1
+                )
             end
+
             state.spinner.index = (state.spinner.index % #state.spinner.frames)
                 + 1
         end)
@@ -115,7 +133,7 @@ local function append_server_response(prompt, win_width)
         for line in response:gmatch("([^\n]+)") do
             -- Wrap each line of the response to fit within the buffer width
             local wrapped_line =
-                Utils.wrap_text(line, math.floor(win_width - 3))
+                Utils.wrap_text(line, math.floor(win_width - 4))
 
             -- wrap_text returns a table of strings, so we need to insert each of them
             for _, wrapped_subline in ipairs(wrapped_line) do
@@ -153,31 +171,24 @@ local function append_server_response(prompt, win_width)
     end)
 end
 
+-- TODO: Possibly change prompt to be left aligned instead of right
 local function append_user_prompt(prompt)
     local win_width = vim.api.nvim_win_get_width(state.winid)
 
     local lines = vim.api.nvim_buf_get_lines(state.bufnr, 0, -1, false)
     local trimmed_line = Utils.trim(lines[2])
 
+    local wrap_width = math.floor(win_width * 0.4)
+
     local wrapped_prompt = {}
+    for line in prompt:gmatch("([^\n]+)") do
+        -- Wrap each line of the prompt to fit within the buffer width
+        local wrapped_line = Utils.wrap_text(line, wrap_width)
 
-    local line_start = 1
-    local wrap_width = math.floor(win_width * 0.6)
-
-    --[[
-        The prompt buffer is a single line, so we manually split it into
-        multiple chunks, wrapping at the specified width
-    --]]
-    while line_start <= #prompt do
-        -- Get the next chunk of the prompt
-        local line_end = math.min(line_start + wrap_width - 1, #prompt)
-
-        local wrapped_line = prompt:sub(line_start, line_end)
-
-        -- Add this wrapped line to the wrapped_prompt table
-        table.insert(wrapped_prompt, wrapped_line)
-
-        line_start = line_end + 1
+        -- wrap_text returns a table of strings, so we need to insert each of them
+        for _, wrapped_subline in ipairs(wrapped_line) do
+            table.insert(wrapped_prompt, wrapped_subline)
+        end
     end
 
     -- Number of padding lines before the prompt
@@ -221,7 +232,7 @@ local function append_user_prompt(prompt)
                 { full_line }
             )
 
-            if #line < wrap_width and index ~= 1 then
+            if #line < wrap_width and #wrapped_prompt ~= 1 then
                 vim.api.nvim_buf_add_highlight(
                     state.bufnr,
                     -1,
@@ -254,7 +265,7 @@ local function append_user_prompt(prompt)
         end
 
         -- Append each wrapped prompt line, adjusting for right alignment
-        for index, line in ipairs(wrapped_prompt) do
+        for _, line in ipairs(wrapped_prompt) do
             -- Calculate the padding needed to right-align the text
             -- (how far from the right of window)
             local padding_needed = win_width - #line - 4
@@ -290,7 +301,7 @@ local function append_user_prompt(prompt)
                 { full_line }
             )
 
-            if #line < wrap_width and index ~= 1 then
+            if #line < wrap_width and #wrapped_prompt ~= 1 then
                 vim.api.nvim_buf_add_highlight(
                     state.bufnr,
                     -1,
@@ -358,12 +369,10 @@ function M.create_chat_window()
         return width, height
     end
 
-    -- Default of 35 for user chosen width
     local win_width, win_height =
         get_window_dimensions(state.opts.window.width or 35)
 
     local col
-
     if state.opts.window.position == "left" then
         -- Float window will be on the left side
         col = 0
@@ -373,13 +382,15 @@ function M.create_chat_window()
     end
 
     if not vim.api.nvim_buf_is_valid(state.bufnr) then
+        -- BUG: Unexpected behaviors when opening Oil file explorer within
+        -- prompt input buffer and toggling chat window
         state.bufnr = vim.api.nvim_create_buf(false, true)
     end
 
     -- Default to bottom
     local row = 0
     if state.opts.prompt.prompt_position == "top" then
-        row = 4
+        row = math.floor(win_height * 0.15)
     end
 
     state.winid = vim.api.nvim_open_win(state.bufnr, true, {
@@ -400,8 +411,6 @@ function M.create_chat_window()
     -- Get current lines in buffer
     local lines = vim.api.nvim_buf_get_lines(state.bufnr, 0, -1, false)
 
-    -- BUG: Unexpected behavior when opening Oil file explorer within
-    -- prompt input buffer and toggling chat window
     local welcome_text = "What can I help with?"
 
     local text_len = #welcome_text

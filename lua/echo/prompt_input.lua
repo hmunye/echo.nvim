@@ -13,7 +13,7 @@ local function get_input()
 
     -- Return all lines in the buffer as a single string
     local lines = vim.api.nvim_buf_get_lines(state.bufnr, 0, -1, false)
-    return table.concat(lines, " ")
+    return table.concat(lines, "\n")
 end
 
 function M.init_prompt_input_opts(opts)
@@ -37,7 +37,7 @@ function M.create_prompt_input()
     )
 
     -- Default to bottom
-    local row = 48
+    local row = vim.api.nvim_win_get_height(state.opts.parent_window.winid) + 2
 
     if state.opts.prompt.prompt_position == "top" then
         row = 0
@@ -65,31 +65,6 @@ function M.create_prompt_input()
 
     return { bufnr = state.bufnr, winid = state.winid }
 end
-
--- function M.close_prompt_input()
---     if not bufnr then
---         return
---     end
---
---     if vim.api.nvim_get_mode().mode == "i" then
---         vim.cmd([[stopinsert]])
---     end
---
---     if winid and vim.api.nvim_win_is_valid(winid) then
---         vim.api.nvim_win_close(winid, true)
---         winid = nil
---     end
---
---     if bufnr and vim.api.nvim_buf_is_valid(bufnr) then
---         vim.api.nvim_buf_delete(bufnr, { force = true })
---         bufnr = nil
---     end
---
---     if augroup then
---         vim.api.nvim_del_augroup_by_id(augroup)
---         augroup = nil
---     end
--- end
 
 vim.api.nvim_create_user_command("EchoSubmitPrompt", function()
     local input = get_input()
