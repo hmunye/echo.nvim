@@ -23,17 +23,17 @@
 - [**Ollama**](https://ollama.com/download)
 - **curl**
 
+### Start the Ollama Server: 
+You must run the Ollama server to interact with models. Start the server with the following command:
+
+```bash
+ollama serve
+```
 ### Pull a Model: 
 You need to download a model to use with Ollama. For example, to pull the `llama3.2:3b` model, run the following command:
 
 ```bash
 ollama pull llama3.2:3b
-```
-### Start the Ollama Server: 
-You must run the Ollama server to interact with the model. Start the server with the following command:
-
-```bash
-ollama serve
 ```
 ### Setup Plugin:
 
