@@ -9,9 +9,9 @@
 </div>
 
 ## TOC
-* [Overview](##-Overview)
-* [Installation](##-Installation)
-* [Usage](##-Usage)
+* [Overview](#overview)
+* [Installation](#installation)
+* [Usage](#usage)
 
 ## Overview
 **echo.nvim** is a Neovim plugin that integrates local, AI-powered chat and real-time assistance directly into your terminal via Ollama, offering a private and seamless experience within your development environment.
