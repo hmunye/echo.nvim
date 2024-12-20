@@ -58,6 +58,7 @@ end
 
 ---@param command string
 function M.is_command_installed(command)
+    ---@diagnostic disable-next-line
     Job:new({
         command = "command",
         args = { "-v", command },
@@ -75,8 +76,9 @@ function M.is_command_installed(command)
     }):start()
 end
 
--- -- Starts the Ollama server but automatically terminates upon quitting Neovim
+-- -- Starts the Ollama server and automatically terminates upon quitting Neovim
 -- function M.start_server()
+--     ---@diagnostic disable-next-line
 --     Job:new({
 --         command = "ollama",
 --         args = { "serve" },
