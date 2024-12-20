@@ -98,6 +98,10 @@ return {
                     mode = { "n", "i" },
                     lhs = "<CR>",
                 },
+                clear_window = {
+                    mode = { "n" },
+                    lhs = "<leader>c",
+                },
             },
 	})
     end,
