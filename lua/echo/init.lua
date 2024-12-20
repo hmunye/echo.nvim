@@ -16,7 +16,7 @@ local Echo = {}
     is provided
     `setup` is a key of the `Echo` table
 --]]
-Echo.setup = function(opts)
+function Echo.setup(opts)
     local success, err = Utils.is_command_installed("ollama")
     if not success then
         print(err)
@@ -29,10 +29,7 @@ Echo.setup = function(opts)
         return
     end
 
-    require("echo.llama").is_model_available(opts.model)
     require("echo.chat").init_chat_window_opts(opts)
-
-    print("chat initialized")
 end
 
 return Echo
