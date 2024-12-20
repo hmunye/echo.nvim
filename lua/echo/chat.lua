@@ -417,6 +417,8 @@ function M.create_chat_window()
         -- BUG: Unexpected behaviors when opening Oil file explorer within
         -- prompt input buffer and toggling chat window
         state.bufnr = vim.api.nvim_create_buf(false, true)
+        -- Set to "echo" so only this plugin's markdown is rendered
+        vim.bo[state.bufnr].filetype = "echo"
     end
 
     -- Default to bottom
