@@ -9,9 +9,9 @@
 </div>
 
 ## TOC
-* [Overview](#-Overview)
-* [Installation](#-Installation)
-* [Usage](#-Usage)
+* [Overview](##-Overview)
+* [Installation](##-Installation)
+* [Usage](##-Usage)
 
 ## Overview
 **echo.nvim** is a Neovim plugin that integrates local, AI-powered chat and real-time assistance directly into your terminal via Ollama, offering a private and seamless experience within your development environment.
@@ -139,7 +139,7 @@ key_mappings = {
 
 Clears the chat window buffer. Will not clear the chat history
 
-You can customize the key mapping by modifying the key mappings section. For example, to map the submit action to <leader>c:
+You can customize the key mapping by modifying the key mappings section. For example, to map the clear chat action to \<leader\> c:
 
 ```lua
 key_mappings = {
