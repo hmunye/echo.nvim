@@ -4,7 +4,6 @@
 --]]
 
 local Utils = require("echo.utils")
-local Chat = require("echo.chat")
 
 -- Tables `{}` are the only built-in data structure
 local Echo = {}
@@ -14,14 +13,26 @@ local Echo = {}
 
 --[[
     Every function returns nil by default if no explicit return value
-    is provided. `setup` is a key of the `Echo` table
+    is provided
+    `setup` is a key of the `Echo` table
 --]]
 Echo.setup = function(opts)
-    Utils.is_command_installed("ollama")
-    Utils.is_command_installed("curl")
-    Utils.is_model_available(opts.model)
+    local success, err = Utils.is_command_installed("ollama")
+    if not success then
+        print(err)
+        return
+    end
 
-    Chat.init_chat_window_opts(opts)
+    success, err = Utils.is_command_installed("curl")
+    if not success then
+        print(err)
+        return
+    end
+
+    require("echo.llama").is_model_available(opts.model)
+    require("echo.chat").init_chat_window_opts(opts)
+
+    print("chat initialized")
 end
 
 return Echo

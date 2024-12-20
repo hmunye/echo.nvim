@@ -1,6 +1,6 @@
 local Utils = require("echo.utils")
 local Prompt = require("echo.prompt_input")
-local LLM = require("echo.llm")
+local LLM = require("echo.llama")
 
 local M = {}
 

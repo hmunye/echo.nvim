@@ -21,8 +21,8 @@
 - [ ] Option to enable/disable streaming of model responses to chat buffer
 - [ ] Ability to dynamically switch between locally available models
 - [ ] Control over whether the current buffer is included as context for the model
-- [ ] Configuration of model parameters (e.g., temperature, system message)
-- [ ] Support for including chat history (previous prompts and responses) as context in each request 
+- [x] Configuration of model parameters (e.g., temperature, system message)
+- [x] Support for including chat history (previous prompts and responses) as context in each request 
 
 ## Installation
 
