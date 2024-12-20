@@ -30,7 +30,7 @@ You need to download a model to use with Ollama. For example, to pull the `llama
 ollama pull llama3.2:3b
 ```
 ### Start the Ollama Server: 
-You must run the Ollama server to interact with the model. Start the server by running:
+You must run the Ollama server to interact with the model. Start the server with the following command:
 
 ```bash
 ollama serve
@@ -41,7 +41,7 @@ Using [lazy.nvim](https://github.com/folke/lazy.nvim):
 
 ```lua
 return {
-	"hmunye/echo.nvim",
+    "hmunye/echo.nvim",
     dependencies = {
         "nvim-lua/plenary.nvim",
         {
@@ -56,14 +56,14 @@ return {
         },
     },
     config = function() 
-		require("echo").setup({
+	require("echo").setup({
             model = "llama3.2:3b", --- REQUIRED
 
             --- REST ARE OPTIONAL
             model_options = {
-                temperature = 0.8, -- Controls the randomness of the model's output. Higher values (e.g., 1.0) make the output more random and creative, while lower values (e.g., 0.2) make it more focused and deterministic. (Default: 0.8)
+                temperature = 0.8, -- Controls the randomness of the model's output. Higher values (1.0) make the output more random and creative, while lower values (e.g., 0.2) make it more focused and deterministic (Default: 0.8)
                 seed = 0, -- Random seed for repeatable output. If set to a specific value, the model will produce the same output each time given the same input. (Default: 0)
-                num_ctx = 2048, -- The size of the context window used by the model to generate the next token. A larger window allows the model to consider more previous text but can be more computationally expensive. (Default: 2048)
+                num_ctx = 2048, -- The size of the context window used by the model to generate the next token. A larger window allows the model to consider more previous text. (Default: 2048)
                 num_predict = -1, -- Maximum number of tokens the model is allowed to generate in response to a prompt. A value of -1 means there is no limit to the number of tokens generated. (Default: -1 for unlimited generation)
                 system_prompt = "", -- A system-level prompt that sets the context or behavior of the model, often used to define rules or constraints for the conversation. (Default: "")
             },
@@ -99,7 +99,7 @@ return {
                     lhs = "<CR>",
                 },
             },
-		})
+	})
     end,
 }
 ```
