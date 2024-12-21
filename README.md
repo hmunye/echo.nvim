@@ -18,7 +18,7 @@
 **echo.nvim** is a Neovim plugin that provides local, AI-driven chat and real-time assistance in your terminal via Ollama. A private, seamless experience within your development workflow.
 
 ## Features
-- [ ] Option to enable/disable streaming of model responses to chat buffer
+- [ ] Option to enable/disable streaming of generated responses to chat buffer
 - [ ] Ability to dynamically switch between locally available models
 - [ ] Control over whether the current buffer is included as context for the model
 - [x] Configuration of model parameters (e.g., temperature, system prompt)
@@ -27,7 +27,7 @@
 ## Installation
 
 ### Prerequisites:
-- **Neovim 0.10.0+**
+- **Neovim 0.10+**
 - [**Ollama**](https://ollama.com/download)
 - **curl**
 
@@ -153,7 +153,18 @@ return {
                 -- reduce the number of less probable tokens that can be selected.
                 -- Default is 0.0
                 min_p = 0.0,
+
+                -- (bool) Whether to return the generated response as a single 
+                -- response object (false), or a stream of objects (true)
+                -- Default is true
+                stream = true
             },
+
+            -- (bool) Controls whether the current buffer is included as context for the model.
+            -- When enabled, the model will consider the content of the current buffer
+            -- along with other provided input when generating response.
+            -- Default is true
+            include_current_buffer = true,
 
             -- (string) A system role message that sets the context or behavior
             -- of the model.
@@ -242,17 +253,22 @@ return {
                     -- Can specify multiple modes, e.g., { "n", "i" }.
                     mode = { "n" },
 
-                    -- (string) The left-hand side of the key mapping (the key combination you press to trigger the action).
+                    -- (string) The left-hand side of the key mapping, 
+                    -- the key combination you press to trigger the action.
                     -- Example: "<C-c>" for Ctrl + c.
                     lhs = "<C-c>",
+                },
+                toggle_menu = {
+                    mode = { "" },
+                    lhs = "",
                 },
                 submit_prompt = {
                     mode = { "n", "i" },
                     lhs = "<CR>",
                 },
                 clear_chat = {
-                    mode = { "n" },
-                    lhs = "<leader>c",
+                    mode = { "" },
+                    lhs = "",
                 },
             },
         })
