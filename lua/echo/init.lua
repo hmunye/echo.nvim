@@ -4,31 +4,58 @@
 --]]
 
 local Utils = require("echo.utils")
+local Config = require("echo.config")
 
--- Tables `{}` are the only built-in data structure
+---@class Echo
+---@field config EchoConfig
 local Echo = {}
 
--- `_` refers to private module member. Not enforced
--- Echo._example = {}
+-- Set the index of Echo to itself
+Echo.__index = Echo
 
---[[
-    Every function returns nil by default if no explicit return value
-    is provided
-    `setup` is a key of the `Echo` table
---]]
+---@return Echo
+function Echo:new()
+    local config = Config.get_default_config()
+
+    local echo = setmetatable({
+        config = config,
+    }, self)
+
+    return echo
+end
+
 function Echo.setup(opts)
     local success, err = Utils.is_command_installed("ollama")
     if not success then
-        print(err)
+        vim.api.nvim_echo({
+            { err, "ErrorMsg" },
+        }, true, {})
+
         return
     end
 
     success, err = Utils.is_command_installed("curl")
     if not success then
-        print(err)
+        vim.api.nvim_echo({
+            { err, "ErrorMsg" },
+        }, true, {})
+
         return
     end
 
+    if not opts.model then
+        vim.api.nvim_echo({
+            {
+                "'model' field must be specified in the configuration",
+                "ErrorMsg",
+            },
+        }, true, {})
+
+        return
+    end
+
+    -- Placing require here ensures the `chat` module is not loaded into memory
+    -- before initial checks
     require("echo.chat").init_chat_window_opts(opts)
 end
 
