@@ -21,8 +21,8 @@
 - [ ] Option to enable/disable streaming of generated responses to chat buffer
 - [ ] Ability to dynamically switch between locally available models
 - [ ] Control over whether the current buffer is included as context for the model
-- [x] Configuration of model parameters (e.g., temperature, system prompt)
-- [x] Support for including chat history (previous prompts and responses) as context in each request 
+- [x] Configuration of model parameters (e.g., temperature, system prompt, seed)
+- [x] Includes chat history (previous prompts and responses) as context in each request 
 
 ## Installation
 
@@ -214,7 +214,7 @@ return {
                 -- Default is "bottom"
                 position = "bottom",
                 -- (string) The title of the window.
-                -- Setting to `nil` defaults it to current model's name
+                -- Setting to `nil` defaults it to the current model's name
                 title = nil,
                 -- (string) The position of the window's title.
                 -- Options:
@@ -236,7 +236,7 @@ return {
                 -- (bool) If true, the prompt will start in insert mode.
                 -- Default is true
                 start_insert_mode = true,
-                -- (string) The background color for the prompt highlight. (
+                -- (string) The background color for the prompt highlight.
                 -- Default is "#404040"
                 bg_color = "#404040",
             },

@@ -1,0 +1,7 @@
+===============================================================================
+                                                                   *echo.nvim*
+
+This plugin provides local, AI-driven chat and real-time assistance in your 
+terminal via Ollama. See examples:
+
+vim:tw=78:ts=8:ft=help:norl:
